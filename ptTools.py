@@ -8,16 +8,17 @@ reload( pc )
 import pkmel.rigTools as rigTools
 reload( rigTools )
 
-def city2DUpdateShotAsset( scenePath='' ) :
+def batchRenameFiles( folderPath='' , search='' , replace='' ) :
 	
-	import sg.utils as sgUtil
-	reload( sgUtil )
-
-	assetPaths = rigTools.getReferencedPathFromMa( os.path.normpath( scenePath ) )
-
-	print assetPaths
-
-	pass
+	cleanedPath = os.path.normpath( folderPath )
+	files = [ f for f in os.listdir( cleanedPath ) if os.path.isfile( os.path.join( cleanedPath , f ) ) ]
+	
+	for _file in files :
+		
+		currFileName = _file.replace( search , replace )
+		oldFilePath = os.path.join( cleanedPath , _file )
+		currFilePath = os.path.join( cleanedPath , currFileName )
+		shutil.move( oldFilePath , currFilePath )
 
 def frdAddEyeSpec() :
 
