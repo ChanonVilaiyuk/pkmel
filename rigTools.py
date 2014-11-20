@@ -9,33 +9,6 @@ import re
 import pkmel.core as pc
 reload( pc )
 
-def getVertexIdsFromFace( face='' ) :
-
-	result = mc.polyInfo( face , faceToVertex=True )[0]
-	vtxIds = []
-
-	for each in result.split( ' ' ) :
-		vtxId = None
-		try :
-			vtxId = int( each )
-		except :
-			pass
-
-		if vtxId :
-			vtxIds.append( vtxId )
-
-	return vtxIds
-
-def transformOnSelectedFace() :
-
-	selectedFace = mc.ls( sl=True , fl=True )[0]
-	vtxIds = getVertexIdsFromFace( selectedFace )
-
-	geo = selectedFace.split( '.' )[0]
-
-	print vtxIds
-	return True
-
 def quickOrient( aimVec=[0,1,0] , upVec=[-1,0,0] ) :
 	
 	sels = mc.ls( sl=True )
@@ -91,18 +64,6 @@ def createBeforeBlendShape() :
 	bsn = '_'.join( tmpNameList )
 	mc.blendShape( before=True , origin='world' , n=bsn )
 	mc.setAttr( '%s.w[0]' % bsn , 1 )
-
-def openSelectedReferenceFolder() :
-
-	sel = mc.ls( sl=True )[0]
-	rfn = mc.referenceQuery( sel , rfn=True )
-	filePath = os.path.normpath( mc.referenceQuery( rfn , f=True ) )
-	folderPath , fileName = os.path.split( filePath )
-
-	print 'Reference file is \n'
-	print filePath
-
-	os.startfile( folderPath )
 
 def selectFacialController() :
 	
@@ -298,28 +259,6 @@ def pullSceneBack( scenePath , dropboxRoot , projectRoot ) :
 		dropboxTexturePath = texturePath.replace( projectRoot , dropboxRoot )
 		copyToReplacedPath( dropboxTexturePath , dropboxRoot , projectRoot )
 
-def removeCurrentNonRelatedTexture() :
-
-	currScenePath = os.path.normpath( mc.file( q=True , sn=True ) )
-
-	tmpList = currScenePath.split( os.sep )
-
-	assetPath = ''
-	
-	for ix in xrange( 0 , 7 ) :
-		assetPath = '%s%s%s' % ( assetPath , tmpList[ix] , os.sep )
-
-	txtHiFolderPath = os.path.join(
-										assetPath ,
-										'texture' ,
-										'hero' ,
-										'hi'
-									)
-	
-	removeNonRelatedTexture( txtHiFolderPath )
-
-	return True
-
 def removeNonRelatedTexture( textureFolderPath='' ) :
 
 	cleanedPath = os.path.normpath( textureFolderPath )
@@ -422,23 +361,6 @@ def createCleanedCamera() :
 	parCons = mc.parentConstraint( selectedCam , cleanedCam )
 	mc.bakeResults( cleanedCam , simulation=True , t=( minTime , maxTime ) )
 	mc.delete( parCons )
-
-def renameFileAndTextureNode( fileNode='' , name='' , type_='' ) :
-
-	filePath = os.path.normpath( mc.getAttr( '%s.fileTextureName' % fileNode ) )
-
-	folderPath , fileNameExt = os.path.split( filePath )
-	fileName , fileExt = os.path.splitext( fileNameExt )
-
-	newFilePath = os.path.join(
-									folderPath ,
-									'%s_%s%s' % ( name , type_ , fileExt )
-								)
-
-	os.rename( filePath , newFilePath )
-
-	mc.setAttr( '%s.fileTextureName' % fileNode , newFilePath , type='string' )
-	mc.rename( fileNode , '%s%s_file' % ( name , capitalizeFirst( type_ ) ) )
 
 def renameSelectedFileNode() :
 	
@@ -595,28 +517,6 @@ def doAddOriGrp() :
 		grp.parent( parent )
 		mc.parent( sel , grp )
 
-def connectEyeRot() :
-
-	headJnt = 'head1ProxySkin_jnt'
-	eyeLJnt = 'eyeProxySkinLFT_jnt'
-	eyeRJnt = 'eyeProxySkinRGT_jnt'
-	
-	rotGrp = mc.ls( '*:lidBshRot_grp' )[0]
-	rotLZro = mc.ls( '*:lidBshRotGrpZroLFT_grp' )[0]
-	rotRZro = mc.ls( '*:lidBshRotGrpZroRGT_grp' )[0]
-
-	rotL = mc.ls( '*:lidBshRotLFT_grp' )[0]
-	rotR = mc.ls( '*:lidBshRotRGT_grp' )[0]
-
-	mc.parentConstraint( headJnt , rotGrp )
-	mc.scaleConstraint( headJnt , rotGrp )
-
-	mc.delete( mc.parentConstraint( eyeLJnt , rotLZro ) )
-	mc.delete( mc.parentConstraint( eyeRJnt , rotRZro ) )
-
-	mc.parentConstraint( eyeLJnt , rotL )
-	mc.parentConstraint( eyeRJnt , rotR )
-
 def doAddElem( elm='' ) :
 
 	for each in sorted( mc.ls( sl=True , l=True ) , reverse=True ) :
@@ -691,55 +591,6 @@ def removeAllShader() :
 				print '%s has been deleted.' % each
 			except :
 				print '%s cannot be deleted.' % each
-
-def createSkinController() :
-
-	bb = mc.exactWorldBoundingBox( mc.ls( type='mesh' ) )
-	charHeight = bb[4] - bb[2]
-	ctrlSize = charHeight / 50
-
-	skinCtrlName = 'skinCtrl_ctrl'
-	skinCtrl = pc.Control( 'crossArrow' )
-	skinCtrl.name = skinCtrlName
-	skinCtrl.color = 'yellow'
-	skinCtrl.scaleShape( ctrlSize )
-
-	skinCtrl.lockHideAttrs( 'v' )
-
-	skinJnts = [u'rootProxySkin_jnt', u'pelvisProxySkin_jnt', u'upLegProxySkinLFT_jnt', u'lowLegProxySkinLFT_jnt', u'ankleProxySkinLFT_jnt', u'ballProxySkinLFT_jnt', u'toeProxySkinLFT_jnt', u'lowLegRbnDtl1ProxySkinLFT_jnt', u'lowLegRbnDtl2ProxySkinLFT_jnt', u'lowLegRbnDtl3ProxySkinLFT_jnt', u'lowLegRbnDtl4ProxySkinLFT_jnt', u'lowLegRbnDtl5ProxySkinLFT_jnt', u'upLegRbnDtl1ProxySkinLFT_jnt', u'upLegRbnDtl2ProxySkinLFT_jnt', u'upLegRbnDtl3ProxySkinLFT_jnt', u'upLegRbnDtl4ProxySkinLFT_jnt', u'upLegRbnDtl5ProxySkinLFT_jnt', u'upLegProxySkinRGT_jnt', u'lowLegProxySkinRGT_jnt', u'ankleProxySkinRGT_jnt', u'ballProxySkinRGT_jnt', u'toeProxySkinRGT_jnt', u'lowLegRbnDtl1ProxySkinRGT_jnt', u'lowLegRbnDtl2ProxySkinRGT_jnt', u'lowLegRbnDtl3ProxySkinRGT_jnt', u'lowLegRbnDtl4ProxySkinRGT_jnt', u'lowLegRbnDtl5ProxySkinRGT_jnt', u'upLegRbnDtl1ProxySkinRGT_jnt', u'upLegRbnDtl2ProxySkinRGT_jnt', u'upLegRbnDtl3ProxySkinRGT_jnt', u'upLegRbnDtl4ProxySkinRGT_jnt', u'upLegRbnDtl5ProxySkinRGT_jnt', u'spine1ProxySkin_jnt', u'spine2ProxySkin_jnt', u'spine3ProxySkin_jnt', u'spine4ProxySkin_jnt', u'neck1ProxySkin_jnt', u'head1ProxySkin_jnt', u'jaw1LWRProxySkin_jnt', u'jaw2LWRProxySkin_jnt', u'jaw1UPRProxySkin_jnt', u'eyeProxySkinLFT_jnt', u'eyeProxySkinRGT_jnt', u'neckRbnProxySkin_jnt', u'clav1ProxySkinLFT_jnt', u'upArmProxySkinLFT_jnt', u'forearmProxySkinLFT_jnt', u'wristProxySkinLFT_jnt', u'index1ProxySkinLFT_jnt', u'index2ProxySkinLFT_jnt', u'index3ProxySkinLFT_jnt', u'index4ProxySkinLFT_jnt', u'index5ProxySkinLFT_jnt', u'middle1ProxySkinLFT_jnt', u'middle2ProxySkinLFT_jnt', u'middle3ProxySkinLFT_jnt', u'middle4ProxySkinLFT_jnt', u'middle5ProxySkinLFT_jnt', u'ring1ProxySkinLFT_jnt', u'ring2ProxySkinLFT_jnt', u'ring3ProxySkinLFT_jnt', u'ring4ProxySkinLFT_jnt', u'ring5ProxySkinLFT_jnt', u'pinky1ProxySkinLFT_jnt', u'pinky2ProxySkinLFT_jnt', u'pinky3ProxySkinLFT_jnt', u'pinky4ProxySkinLFT_jnt', u'pinky5ProxySkinLFT_jnt', u'thumb1ProxySkinLFT_jnt', u'thumb2ProxySkinLFT_jnt', u'thumb3ProxySkinLFT_jnt', u'thumb4ProxySkinLFT_jnt', u'upArmRbnDtl1ProxySkinLFT_jnt', u'upArmRbnDtl2ProxySkinLFT_jnt', u'upArmRbnDtl3ProxySkinLFT_jnt', u'upArmRbnDtl4ProxySkinLFT_jnt', u'upArmRbnDtl5ProxySkinLFT_jnt', u'forearmRbnDtl1ProxySkinLFT_jnt', u'forearmRbnDtl2ProxySkinLFT_jnt', u'forearmRbnDtl3ProxySkinLFT_jnt', u'forearmRbnDtl4ProxySkinLFT_jnt', u'forearmRbnDtl5ProxySkinLFT_jnt', u'clav1ProxySkinRGT_jnt', u'upArmProxySkinRGT_jnt', u'forearmProxySkinRGT_jnt', u'wristProxySkinRGT_jnt', u'index1ProxySkinRGT_jnt', u'index2ProxySkinRGT_jnt', u'index3ProxySkinRGT_jnt', u'index4ProxySkinRGT_jnt', u'index5ProxySkinRGT_jnt', u'middle1ProxySkinRGT_jnt', u'middle2ProxySkinRGT_jnt', u'middle3ProxySkinRGT_jnt', u'middle4ProxySkinRGT_jnt', u'middle5ProxySkinRGT_jnt', u'ring1ProxySkinRGT_jnt', u'pinky1ProxySkinRGT_jnt', u'ring2ProxySkinRGT_jnt', u'pinky2ProxySkinRGT_jnt', u'ring3ProxySkinRGT_jnt', u'pinky3ProxySkinRGT_jnt', u'ring4ProxySkinRGT_jnt', u'pinky4ProxySkinRGT_jnt', u'ring5ProxySkinRGT_jnt', u'pinky5ProxySkinRGT_jnt', u'thumb1ProxySkinRGT_jnt', u'thumb2ProxySkinRGT_jnt', u'thumb3ProxySkinRGT_jnt', u'thumb4ProxySkinRGT_jnt', u'upArmRbnDtl1ProxySkinRGT_jnt', u'upArmRbnDtl2ProxySkinRGT_jnt', u'upArmRbnDtl3ProxySkinRGT_jnt', u'upArmRbnDtl4ProxySkinRGT_jnt', u'upArmRbnDtl5ProxySkinRGT_jnt', u'forearmRbnDtl1ProxySkinRGT_jnt', u'forearmRbnDtl2ProxySkinRGT_jnt', u'forearmRbnDtl3ProxySkinRGT_jnt', u'forearmRbnDtl4ProxySkinRGT_jnt', u'forearmRbnDtl5ProxySkinRGT_jnt']
-
-	for jnt in skinJnts :
-
-		parents = mc.listRelatives( jnt , p=True )
-
-		shape = 'cube'
-
-		if not 'Rbn' in jnt :
-			shape = 'circle'
-
-		ctrl = pc.Control( shape )
-		ctrlName , ctrlSide , ctrlType = getElementName( jnt )
-		ctrl.name = '%sJnt%s_ctrl' % ( ctrlName , ctrlSide )
-		ctrl.lockHideAttrs( 'sx' , 'sy' , 'sz' , 'v' )
-		ctrl.scaleShape( ctrlSize )
-
-		mc.select( ctrl , r=True )
-		zgrp = doZeroGroup()[0]
-		zgrp.snap( jnt )
-		try :
-			mc.parentConstraint( ctrl , jnt )
-			mc.scaleConstraint( ctrl , jnt )
-		except :
-			pass
-
-		if parents :
-			try :
-				mc.parentConstraint( parents[0] , zgrp , mo=True )
-				mc.scaleConstraint( parents[0] , zgrp , mo=True )
-			except :
-				pass
-
-		mc.parent( zgrp , skinCtrl )
 
 def uvOffsetor() :
 

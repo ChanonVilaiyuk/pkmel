@@ -260,7 +260,7 @@ def city2DPublish( pubType='Render' ) :
 	print '\nScene has been published to %s\n' % pubFilePath
 
 def city2DRef( pubType='Anim' ) :
-
+	
 	scenePath = os.path.normpath( mc.file( q=True , sn=True ) )
 	sceneFolderPath , sceneNameExt = os.path.split( scenePath )
 	sceneFolderPathElem = sceneFolderPath.split( os.sep )
@@ -280,7 +280,7 @@ def city2DRef( pubType='Anim' ) :
 	pubFileNameExt = '%s.mb' % pubFileName
 	
 	pubFilePath = os.path.join( refFolderPath , pubFileNameExt )
-
+	
 	mc.file( pubFilePath , r=True , ns=pubFileName )
 
 def createThumbnail() :
