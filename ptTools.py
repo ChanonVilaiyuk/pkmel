@@ -2,11 +2,107 @@ import maya.cmds as mc
 import maya.mel as mm
 import os
 import shutil
+import pickle
 
 import pkmel.core as pc
 reload( pc )
 import pkmel.rigTools as rigTools
 reload( rigTools )
+
+def pfAssetRelinkTexture() :
+	prefix = r'P:\Lego_Template\asset\3D\friendHotelSetFromPf\source'
+
+	for each in mc.ls( type='file' ) :
+		
+		mc.setAttr( '%s.fileTextureName' % each , l=False )
+		currTexturePath = mc.getAttr( '%s.fileTextureName' % each )
+		
+		tiffPath = os.path.join( prefix , currTexturePath ).replace( '.tiff' , '.exr' )
+		
+		mc.setAttr(  '%s.fileTextureName' % each , tiffPath , type='string' )
+
+def pfAssetImportMatFile() :
+
+	scenePath = os.path.normpath( mc.file( q=True , sn=True ) )
+	sceneFolderPath , sceneNameExt = os.path.split( scenePath )
+
+	matFilePath = os.path.join( sceneFolderPath , 'mat.ma' )
+
+	mc.file( matFilePath , i=True )
+
+def pfAssetReAssignShader() :
+
+	scenePath = os.path.normpath( mc.file( q=True , sn=True ) )
+	sceneFolderPath , sceneNameExt = os.path.split( scenePath )
+	
+	shdFls = [ f for f in os.listdir( sceneFolderPath ) if f.endswith( '.shd' ) ]
+
+	currShdFl = os.path.join( sceneFolderPath , shdFls[0] )
+
+	geoToShader = pickle.load( open( currShdFl , 'rb' ) )
+
+	print geoToShader
+
+	for geo in geoToShader.keys() :
+
+		assignShader( geoToShader[ geo ] , geo )
+
+		print geoToShader[ geo ]
+
+def getRelatedShader( node='' ) :
+
+	# Get shader assigned to given node.
+
+	shader = None
+	
+	mc.select( node , r=True )
+	shapes = mc.ls( dag=True , o=True , s=True , sl=True , ni=True )
+	
+	sgs = mc.listConnections( shapes , type='shadingEngine' )
+	if sgs :
+		shader = mc.listConnections( '%s.surfaceShader' % sgs[0] , s=True , d=False )[0]
+
+	return shader
+
+def assignShader( shader='' , geo='' ) :
+	
+	for each in mc.ls( geo , l=True ) :
+
+		cmd = 'assignSG %s %s' % ( shader , each )
+
+		try :
+			mm.eval( cmd )
+		except :
+			print 'Cannot assign %s to %s' % ( shader , geo )
+	
+	return True
+
+
+def writeSelectedShadingData() :
+
+	scenePath = os.path.normpath( mc.file( q=True , sn=True ) )
+	sceneFolderPath , sceneNameExt = os.path.split( scenePath )
+	sceneName , sceneExt = os.path.splitext( sceneNameExt )
+
+	shadingDataName = '%sShadingData.shd' % sceneName
+
+	shadingDataPath = os.path.join(
+										sceneFolderPath ,
+										shadingDataName
+									)
+
+	relatedShaderDict = {}
+
+	for sel in mc.ls( sl=True , l=True ) :
+		
+		shader = getRelatedShader( sel )
+		if shader :
+			relatedShaderDict[ sel ] = shader
+
+	pickle.dump( relatedShaderDict , open( shadingDataPath , 'wb' ) )
+	
+	print 'Shading data has been written to %s' % shadingDataPath
+	return shadingDataPath
 
 def batchRenameFiles( folderPath='' , search='' , replace='' ) :
 	
@@ -283,7 +379,7 @@ def city2DRef( pubType='Anim' ) :
 	
 	mc.file( pubFilePath , r=True , ns=pubFileName )
 
-def createThumbnail() :
+def createThumbnail( width=450 , height=300 ) :
 
 	currentUserPath = os.path.normpath( os.path.expanduser('~') )
 	tmpFilePath = os.path.join(
@@ -294,8 +390,8 @@ def createThumbnail() :
 	oWidth = mc.getAttr( 'defaultResolution.width' )
 	oHeight = mc.getAttr( 'defaultResolution.height' )
 	
-	width = 450
-	height = 300
+	# width = 450
+	# height = 300
 
 	frame = mc.currentTime( q=True )
 
