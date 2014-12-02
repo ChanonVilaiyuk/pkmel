@@ -3,11 +3,75 @@ import maya.mel as mm
 import os
 import shutil
 import pickle
+import subprocess
 
 import pkmel.core as pc
 reload( pc )
 import pkmel.rigTools as rigTools
 reload( rigTools )
+
+def doChangeTextureExtensionTo( extension='jpg' ) :
+
+	fns = mc.ls( type='file' )
+
+	for fn in fns :
+
+		currTxtPath = os.path.normpath( mc.getAttr( '%s.fileTextureName' % fn ) )
+		currTxtFldPath , currTxtNameExt = os.path.split( currTxtPath )
+		currTxtName , currTxtExt = os.path.splitext( currTxtNameExt )
+
+		fixedTxtPath = os.path.join(
+										currTxtFldPath ,
+										'%s.%s' % ( currTxtName , extension )
+									)
+		print fixedTxtPath
+		mc.setAttr( '%s.fileTextureName' % fn , fixedTxtPath , type='string' )
+
+def doConvertExrTextureFromSelectedFileNode() :
+
+	rvio = os.path.normpath( r'O:\systemTool\convertor\Tweak\RV-3.12.20-32\bin\rvio.exe' )
+
+	fns = mc.ls( sl=True , type='file' )
+
+	for fn in fns :
+
+		currTxtPath = os.path.normpath( mc.getAttr( '%s.fileTextureName' % fn ) )
+		currTxtFldPath , currTxtNameExt = os.path.split( currTxtPath )
+		currTxtName , currTxtExt = os.path.splitext( currTxtNameExt )
+		
+		if currTxtExt == '.exr' :
+
+			tifPath = os.path.join( currTxtFldPath , '%s.tif' % currTxtName )
+
+			if not os.path.exists( tifPath ) :
+
+				cmd = '%s %s -o %s' % ( rvio , currTxtPath , tifPath )
+				subprocess.call( cmd )
+				mc.setAttr( '%s.fileTextureName' % fn , tifPath , type='string' )
+			else :
+
+				mc.setAttr( '%s.fileTextureName' % fn , tifPath , type='string' )
+
+		else :
+
+			exrTxtPath = os.path.join( currTxtFldPath , '%s.exr' % currTxtName )
+			mc.setAttr( '%s.fileTextureName' % fn , exrTxtPath , type='string' )
+
+def createMov(
+					tmpFilePath='' ,
+					fps=24 ,
+					outFilePath=''
+				) :
+	
+	ffmpeg = os.path.normpath( r'O:/systemTool/toolPack/O/systemTool/python/playBlastPlus/convertor/ffmpeg_codec/bin/ffmpeg.exe' )
+
+	cmd = '%s -y -i "%s" -r %s' % ( ffmpeg , os.path.normpath( tmpFilePath ) , fps )
+	cmd += ' -vcodec libx264 -vprofile baseline -crf 22 -bf 0 -pix_fmt yuv420p'
+	cmd += ' -f mov %s' % os.path.normpath( outFilePath )
+	
+	subprocess.call( cmd )
+	
+	return outFilePath
 
 def pfAssetRelinkTexture() :
 	prefix = r'P:\Lego_Template\asset\3D\friendHotelSetFromPf\source'
@@ -17,9 +81,9 @@ def pfAssetRelinkTexture() :
 		mc.setAttr( '%s.fileTextureName' % each , l=False )
 		currTexturePath = mc.getAttr( '%s.fileTextureName' % each )
 		
-		tiffPath = os.path.join( prefix , currTexturePath ).replace( '.tiff' , '.exr' )
+		tifPath = os.path.join( prefix , currTexturePath ).replace( '.exr' , '.tif' )
 		
-		mc.setAttr(  '%s.fileTextureName' % each , tiffPath , type='string' )
+		mc.setAttr(  '%s.fileTextureName' % each , tifPath , type='string' )
 
 def pfAssetImportMatFile() :
 
