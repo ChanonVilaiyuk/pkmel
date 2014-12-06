@@ -94,8 +94,12 @@ class RibbonIk( object ) :
 		
 		self.rbn_ctrl.add( ln = 'autoTwist' , at = 'float' ,
 							k = True , min = 0 , max = 1 )
+		self.rbn_ctrl.add( ln = 'autoSquash' , at = 'float' ,
+							k = True , min = 0 , max = 1 )
 
 		rbnCtrlShp = pc.Dag( self.rbn_ctrl.shape )
+		rbnCtrlShp.add( ln = 'restLength' , at = 'float' ,
+							k = True , min = 0 )
 		rbnCtrlShp.add( ln = 'upVector' , sn = 'u' , at = 'double3' , k = False )
 		rbnCtrlShp.add( p = 'upVector' , ln = 'upVectorX' , sn = 'ux' ,
 						at = 'double' , k = False )
@@ -171,24 +175,74 @@ class RibbonIk( object ) :
 		rbnCtrlShp.add( ln = 'rootTwistAmp' , dv = 1 )
 		rbnCtrlShp.add( ln = 'endTwistAmp' , dv = 1 )
 		
-		self.rbnRootTwstAmp_mul 	= pc.MultDoubleLinear()
-		self.rbnEndTwstAmp_mul 		= pc.MultDoubleLinear()
-		self.rbnRootAutoTwst_mul 	= pc.MultDoubleLinear()
-		self.rbnEndAutoTwst_mul 	= pc.MultDoubleLinear()
+		self.rbnRootTwstAmp_mul = pc.MultDoubleLinear()
+		self.rbnEndTwstAmp_mul = pc.MultDoubleLinear()
+		self.rbnRootAutoTwst_mul = pc.MultDoubleLinear()
+		self.rbnEndAutoTwst_mul = pc.MultDoubleLinear()
 
 		
-		self.rbnRootTwst_grp.attr(self.twstAx) 	>> self.rbnRootTwstAmp_mul.attr('i1')
-		self.rbnEndTwst_grp.attr(self.twstAx) 	>> self.rbnEndTwstAmp_mul.attr('i1')
-		rbnCtrlShp.attr('rootTwistAmp') 	>> self.rbnRootTwstAmp_mul.attr('i2')
-		rbnCtrlShp.attr('endTwistAmp') 		>> self.rbnEndTwstAmp_mul.attr('i2')
+		self.rbnRootTwst_grp.attr(self.twstAx) >> self.rbnRootTwstAmp_mul.attr('i1')
+		self.rbnEndTwst_grp.attr(self.twstAx) >> self.rbnEndTwstAmp_mul.attr('i1')
+		rbnCtrlShp.attr('rootTwistAmp') >> self.rbnRootTwstAmp_mul.attr('i2')
+		rbnCtrlShp.attr('endTwistAmp') >> self.rbnEndTwstAmp_mul.attr('i2')
 		
-		self.rbn_ctrl.attr('autoTwist') 	>> self.rbnRootAutoTwst_mul.attr('i1')
-		self.rbn_ctrl.attr('autoTwist') 	>> self.rbnEndAutoTwst_mul.attr('i1')
-		self.rbnRootTwstAmp_mul.attr('o') 	>> self.rbnRootAutoTwst_mul.attr('i2')
-		self.rbnEndTwstAmp_mul.attr('o') 	>> self.rbnEndAutoTwst_mul.attr('i2')
+		self.rbn_ctrl.attr('autoTwist') >> self.rbnRootAutoTwst_mul.attr('i1')
+		self.rbn_ctrl.attr('autoTwist') >> self.rbnEndAutoTwst_mul.attr('i1')
+		self.rbnRootTwstAmp_mul.attr('o') >> self.rbnRootAutoTwst_mul.attr('i2')
+		self.rbnEndTwstAmp_mul.attr('o') >> self.rbnEndAutoTwst_mul.attr('i2')
 		
-		self.rbnRootAutoTwst_mul.attr('o') 	>> self.rbnRootTwst_add.attr('i1')
-		self.rbnEndAutoTwst_mul.attr('o') 	>> self.rbnEndTwst_add.attr('i1')
+		self.rbnRootAutoTwst_mul.attr('o') >> self.rbnRootTwst_add.attr('i1')
+		self.rbnEndAutoTwst_mul.attr('o') >> self.rbnEndTwst_add.attr('i1')
+
+		# - Ribbon Auto Squash -
+		self.rbnRootPnt_grp = pc.Null()
+		self.rbnMidPnt_grp = pc.Null()
+		self.rbnEndPnt_grp = pc.Null()
+
+		self.rbnRootPntGrp_pntCons = pc.pointConstraint( self.rbnRoot_jnt , self.rbnRootPnt_grp )
+		self.rbnMidPntGrp_pntCons = pc.pointConstraint( self.rbnMid_jnt , self.rbnMidPnt_grp )
+		self.rbnEndPntGrp_pntCons = pc.pointConstraint( self.rbnEnd_jnt , self.rbnEndPnt_grp )
+
+		self.rbnRootPnt_grp.parent( self.rbnAnim_grp )
+		self.rbnMidPnt_grp.parent( self.rbnAnim_grp )
+		self.rbnEndPnt_grp.parent( self.rbnAnim_grp )
+
+		self.rbnRoot_dist = pc.DistanceBetween()
+		self.rbnEnd_dist = pc.DistanceBetween()
+				
+		self.rbnRootPnt_grp.attr('t') >> self.rbnRoot_dist.attr('p1')
+		self.rbnMidPnt_grp.attr('t') >> self.rbnRoot_dist.attr('p2')
+		self.rbnMidPnt_grp.attr('t') >> self.rbnEnd_dist.attr('p1')
+		self.rbnEndPnt_grp.attr('t') >> self.rbnEnd_dist.attr('p2')
+
+		self.rbnLength_add = pc.AddDoubleLinear()
+
+		self.rbnRoot_dist.attr('d') >> self.rbnLength_add.attr('i1')
+		self.rbnEnd_dist.attr('d') >> self.rbnLength_add.attr('i2')
+
+		rbnCtrlShp.attr('restLength').v = size
+
+		self.rbnAutoSquash_blnd = pc.BlendTwoAttr()
+		self.rbnSquashDiv_mdv = pc.MultiplyDivide()
+		self.rbnSquashPow_mdv = pc.MultiplyDivide()
+		self.rbnSquashNorm_mdv = pc.MultiplyDivide()
+
+		self.rbnSquashNorm_mdv.attr('operation').v = 2
+		self.rbnLength_add.attr('o') >> self.rbnSquashNorm_mdv.attr('i1x')
+		rbnCtrlShp.attr('restLength') >> self.rbnSquashNorm_mdv.attr('i2x')
+
+		self.rbnSquashPow_mdv.attr('operation').v = 3
+		self.rbnSquashNorm_mdv.attr('ox') >> self.rbnSquashPow_mdv.attr('i1x')
+		self.rbnSquashPow_mdv.attr('i2x').v = 2
+
+		self.rbnSquashDiv_mdv.attr('operation').v = 2
+		self.rbnSquashDiv_mdv.attr('i1x').v = 1
+		self.rbnSquashPow_mdv.attr('ox') >> self.rbnSquashDiv_mdv.attr('i2x')
+		
+		self.rbn_ctrl.attr('autoSquash') >> self.rbnAutoSquash_blnd.attr('ab')
+		self.rbnAutoSquash_blnd.add( ln='default' , dv=1 , k=True )
+		self.rbnAutoSquash_blnd.attr('default') >> self.rbnAutoSquash_blnd.last()
+		self.rbnSquashDiv_mdv.attr('ox') >> self.rbnAutoSquash_blnd.last()
 
 		# - Cleanup -
 		# rigTools.lockUnusedAttrs( self )
@@ -403,8 +457,9 @@ class RibbonIkHi( RibbonIk ) :
 
 			# Squash setup
 			dtlCtrl.add( ln = 'squash' , k = True )
-			sqshPma.add( ln = 'default' , min = 1 , max = 1 , dv = 1 , k = True )
-			sqshPma.attr('default') >> sqshPma.last1D()
+			# sqshPma.add( ln = 'default' , min = 1 , max = 1 , dv = 1 , k = True )
+			# sqshPma.attr('default') >> sqshPma.last1D()
+			self.rbnAutoSquash_blnd.attr('o') >> sqshPma.last1D()
 			dtlCtrl.attr('squash') >> sqshPma.last1D()
 			sqshPma.attr('output1D') >> dtlJnt.attr( self.sqshAx[0] )
 			sqshPma.attr('output1D') >> dtlJnt.attr( self.sqshAx[1] )
@@ -556,9 +611,10 @@ class RibbonIkLow( RibbonIk ) :
 		self.rbn_ctrl.attr('squash') >> self.rbnSquashAmp_mul.attr('i1')
 
 		self.rbnSquash_add = pc.AddDoubleLinear()
-		self.rbnSquash_add.add( ln='default' , min=1 , max=1 , dv=1 , k=True )
+		# self.rbnSquash_add.add( ln='default' , min=1 , max=1 , dv=1 , k=True )
 
-		self.rbnSquash_add.attr( 'default' ) >> self.rbnSquash_add.attr( 'i1' )
+		# self.rbnSquash_add.attr( 'default' ) >> self.rbnSquash_add.attr( 'i1' )
+		self.rbnAutoSquash_blnd.attr( 'o' ) >> self.rbnSquash_add.attr( 'i1' )
 		self.rbnSquashAmp_mul.attr( 'o' ) >> self.rbnSquash_add.attr( 'i2' )
 		self.rbnSquash_add.attr( 'o' ) >> self.rbn_jnt.attr( self.sqshAx[0] )
 		self.rbnSquash_add.attr( 'o' ) >> self.rbn_jnt.attr( self.sqshAx[1] )
@@ -570,8 +626,8 @@ class RibbonIkLow( RibbonIk ) :
 		self.rbnTwst_mdv.attr('i1x').value = 0.5
 		self.rbnTwst_mdv.attr('i1y').value = 0.5
 		
-		self.rbnRootTwst_add.attr('o') 		>> self.rbnTwst_mdv.attr('i2y')
-		self.rbnEndTwst_add.attr('o') 		>> self.rbnTwst_mdv.attr('i2x')
-		self.rbnTwst_mdv.attr('ox') 		>> self.rbnTwst_pma.last1D()
-		self.rbnTwst_mdv.attr('oy') 		>> self.rbnTwst_pma.last1D()
-		self.rbnTwst_pma.attr('output1D') 	>> self.rbnJntOfst_grp.attr(self.twstAx)
+		self.rbnRootTwst_add.attr('o') >> self.rbnTwst_mdv.attr('i2y')
+		self.rbnEndTwst_add.attr('o') >> self.rbnTwst_mdv.attr('i2x')
+		self.rbnTwst_mdv.attr('ox') >> self.rbnTwst_pma.last1D()
+		self.rbnTwst_mdv.attr('oy') >> self.rbnTwst_pma.last1D()
+		self.rbnTwst_pma.attr('output1D') >> self.rbnJntOfst_grp.attr(self.twstAx)
