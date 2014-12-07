@@ -77,12 +77,14 @@ class RibbonIk( object ) :
 		self.rbnMidJntOfst_grp = pc.Null()
 		self.rbnMidJntZro_grp = pc.group( self.rbnMidJntOfst_grp )
 		self.rbn_ctrl = rigTools.jointControl( 'square' )
-		self.rbnCtrlAim_grp = pc.group( self.rbn_ctrl )
+		self.rbnCtrlOfst_grp = pc.group( self.rbn_ctrl )
+		self.rbnCtrlAim_grp = pc.group( self.rbnCtrlOfst_grp )
 		self.rbnCtrlZro_grp = pc.group( self.rbnCtrlAim_grp )
 
 		self.rbn_ctrl.attr( 'ro' ).value = self.ro
 		
-		self.rbnMidJnt_parCons = pc.parentConstraint( self.rbnMidJntOfst_grp ,
+		self.rbnMidJnt_parCons = pc.parentConstraint(
+														self.rbnMidJntOfst_grp ,
 														self.rbnMid_jnt
 													)
 		self.rbnMid_jnt.parent( self.rbnJnt_grp )
@@ -226,15 +228,15 @@ class RibbonIk( object ) :
 		self.rbnSquashDiv_mdv = pc.MultiplyDivide()
 		self.rbnSquashPow_mdv = pc.MultiplyDivide()
 		self.rbnSquashNorm_mdv = pc.MultiplyDivide()
-
+		
 		self.rbnSquashNorm_mdv.attr('operation').v = 2
 		self.rbnLength_add.attr('o') >> self.rbnSquashNorm_mdv.attr('i1x')
 		rbnCtrlShp.attr('restLength') >> self.rbnSquashNorm_mdv.attr('i2x')
-
+		
 		self.rbnSquashPow_mdv.attr('operation').v = 3
 		self.rbnSquashNorm_mdv.attr('ox') >> self.rbnSquashPow_mdv.attr('i1x')
 		self.rbnSquashPow_mdv.attr('i2x').v = 2
-
+		
 		self.rbnSquashDiv_mdv.attr('operation').v = 2
 		self.rbnSquashDiv_mdv.attr('i1x').v = 1
 		self.rbnSquashPow_mdv.attr('ox') >> self.rbnSquashDiv_mdv.attr('i2x')

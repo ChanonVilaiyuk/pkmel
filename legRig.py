@@ -355,33 +355,59 @@ class LegRig( object ) :
 		self.heelIkPiv_grp = pc.Null()
 		self.toeIkPiv_grp = pc.Null()
 		self.legIkPiv_grp = pc.Null()
+
+		self.ankleRollIkPivZro_grp = pc.group( self.ankleRollIkPiv_grp )
+		self.ankleRollIkZro_ctrl = pc.group( self.ankleRollIk_ctrl )
+		self.toeBendIkPivZro_grp = pc.group( self.toeBendIkPiv_grp )
+		self.footInIkPivZro_grp = pc.group( self.footInIkPiv_grp )
+		self.footOutIkPivZro_grp = pc.group( self.footOutIkPiv_grp )
+		self.heelIkPivZro_grp = pc.group( self.heelIkPiv_grp )
+		self.toeIkPivZro_grp = pc.group( self.toeIkPiv_grp )
+		self.legIkPivZro_grp = pc.group( self.legIkPiv_grp )
 		
 		self.legIkIkhPiv_grp = pc.Null()
 		self.ballIkIkhPiv_grp = pc.Null()
 		self.toeIkIkhPiv_grp = pc.Null()
 		
 		# IK handle - pivots - positioning and parenting
-		self.legIkPiv_grp.snapPoint( ankle )
-		self.ankleRollIkPiv_grp.snapPoint( ball )
-		self.ankleRollIk_ctrl.snapPoint( ball )
-		self.toeBendIkPiv_grp.snapPoint( ball )
-		self.footInIkPiv_grp.snapPoint( footIn )
-		self.footOutIkPiv_grp.snapPoint( footOut )
-		self.heelIkPiv_grp.snapPoint( heel )
-		self.toeIkPiv_grp.snapPoint( toe )
+		# self.legIkPiv_grp.snapPoint( ankle )
+		# self.ankleRollIkPiv_grp.snapPoint( ball )
+		# self.ankleRollIk_ctrl.snapPoint( ball )
+		# self.toeBendIkPiv_grp.snapPoint( ball )
+		# self.footInIkPiv_grp.snapPoint( footIn )
+		# self.footOutIkPiv_grp.snapPoint( footOut )
+		# self.heelIkPiv_grp.snapPoint( heel )
+		# self.toeIkPiv_grp.snapPoint( toe )
+		self.legIkPiv_grp.snap( ankle )
+		self.ankleRollIkPivZro_grp.snap( ball )
+		self.ankleRollIkZro_ctrl.snap( ball )
+		self.toeBendIkPivZro_grp.snap( ball )
+		self.footInIkPivZro_grp.snap( footIn )
+		self.footOutIkPivZro_grp.snap( footOut )
+		self.heelIkPivZro_grp.snap( heel )
+		self.toeIkPivZro_grp.snap( toe )
 		
 		self.legIkIkhPiv_grp.snap( self.legIkIkhZro_grp )
 		self.ballIkIkhPiv_grp.snap( self.ballIkIkhZro_grp )
 		self.toeIkIkhPiv_grp.snap( self.toeIkIkhZro_grp )
+
+		# self.ankleRollIkPiv_grp.parent( self.footInIkPiv_grp )
+		# self.ankleRollIk_ctrl.parent( self.ankleRollIkPiv_grp )
+		# self.toeBendIkPiv_grp.parent( self.footInIkPiv_grp )
+		# self.footInIkPiv_grp.parent( self.footOutIkPiv_grp )
+		# self.footOutIkPiv_grp.parent( self.heelIkPiv_grp )
+		# self.heelIkPiv_grp.parent( self.toeIkPiv_grp )
+		# self.toeIkPiv_grp.parent( self.legIkPiv_grp )
+		# self.legIkPiv_grp.parent( self.legIkGmbl_ctrl )
 		
-		self.ankleRollIkPiv_grp.parent( self.footInIkPiv_grp )
-		self.ankleRollIk_ctrl.parent( self.ankleRollIkPiv_grp )
-		self.toeBendIkPiv_grp.parent( self.footInIkPiv_grp )
-		self.footInIkPiv_grp.parent( self.footOutIkPiv_grp )
-		self.footOutIkPiv_grp.parent( self.heelIkPiv_grp )
-		self.heelIkPiv_grp.parent( self.toeIkPiv_grp )
-		self.toeIkPiv_grp.parent( self.legIkPiv_grp )
-		self.legIkPiv_grp.parent( self.legIkGmbl_ctrl )
+		self.ankleRollIkPivZro_grp.parent( self.footInIkPiv_grp )
+		self.ankleRollIkZro_ctrl.parent( self.ankleRollIkPiv_grp )
+		self.toeBendIkPivZro_grp.parent( self.footInIkPiv_grp )
+		self.footInIkPivZro_grp.parent( self.footOutIkPiv_grp )
+		self.footOutIkPivZro_grp.parent( self.heelIkPiv_grp )
+		self.heelIkPivZro_grp.parent( self.toeIkPiv_grp )
+		self.toeIkPivZro_grp.parent( self.legIkPiv_grp )
+		self.legIkPivZro_grp.parent( self.legIkGmbl_ctrl )
 		
 		self.ankleRollIk_ctrl.rotateOrder = 'xzy'
 		self.ankleRollIk_ctrl.color = 'blue'
@@ -413,30 +439,46 @@ class LegRig( object ) :
 		self.legIk_ctrl.add( ln = '__foot__' , k = True )
 		self.legIk_ctrl.attr('__foot__').set( l = True )
 		
-		attrs = ( 'heelRoll' , 'ballRoll' , 'toeRoll' , 'heelTwist' , 'toeTwist' , 'footRock' , 'toeBend' )
+		attrs = (
+					'heelRoll' ,
+					'ballRoll' ,
+					'toeRoll' ,
+					'heelTwist' ,
+					'toeTwist' ,
+					'footRock' ,
+					'toeBend'
+				)
 		for attr in attrs :
 			self.legIk_ctrl.add( ln = attr , k = True )
 		
 		self.legIk_ctrl.attr('heelRoll') >> self.heelIkPiv_grp.attr('rx')
 		self.legIk_ctrl.attr('ballRoll') >> self.ankleRollIkPiv_grp.attr('rx')
 		self.legIk_ctrl.attr('toeRoll') >> self.toeIkPiv_grp.attr('rx')
-		self.legIk_ctrl.attr('heelTwist') >> self.heelIkPiv_grp.attr('ry')
-		self.legIk_ctrl.attr('toeTwist') >> self.toeIkPiv_grp.attr('ry')
+		# self.legIk_ctrl.attr('heelTwist') >> self.heelIkPiv_grp.attr('ry')
+		# self.legIk_ctrl.attr('toeTwist') >> self.toeIkPiv_grp.attr('ry')
+		self.legIk_ctrl.attr('heelTwist') >> self.heelIkPiv_grp.attr('rz')
+		self.legIk_ctrl.attr('toeTwist') >> self.toeIkPiv_grp.attr('rz')
 		self.legIk_ctrl.attr('toeBend') >> self.toeBendIkPiv_grp.attr('rx')
 		
-		self.legIk_ctrl.attr('footRock') >> self.footInIkPiv_grp.attr('rz')
-		self.legIk_ctrl.attr('footRock') >> self.footOutIkPiv_grp.attr('rz')
+		# self.legIk_ctrl.attr('footRock') >> self.footInIkPiv_grp.attr('rz')
+		# self.legIk_ctrl.attr('footRock') >> self.footOutIkPiv_grp.attr('rz')
+		self.legIk_ctrl.attr('footRock') >> self.footInIkPiv_grp.attr('ry')
+		self.legIk_ctrl.attr('footRock') >> self.footOutIkPiv_grp.attr('ry')
 		
-		if side == 'LFT' :
-			self.footOutIkPiv_grp.attr('xrze').value = 1
-			self.footInIkPiv_grp.attr('mrze').value = 1
-			self.footOutIkPiv_grp.attr('xrzl').value = 0
-			self.footInIkPiv_grp.attr('mrzl').value = 0
-		elif side == 'RGT' :
-			self.footOutIkPiv_grp.attr('mrze').value = 1
-			self.footInIkPiv_grp.attr('xrze').value = 1
-			self.footOutIkPiv_grp.attr('mrzl').value = 0
-			self.footInIkPiv_grp.attr('xrzl').value = 0
+		# if side == 'LFT' :
+		# 	self.footOutIkPiv_grp.attr('xrze').value = 1
+		# 	self.footInIkPiv_grp.attr('mrze').value = 1
+		# 	self.footOutIkPiv_grp.attr('xrzl').value = 0
+		# 	self.footInIkPiv_grp.attr('mrzl').value = 0
+		# elif side == 'RGT' :
+		# 	self.footOutIkPiv_grp.attr('mrze').value = 1
+		# 	self.footInIkPiv_grp.attr('xrze').value = 1
+		# 	self.footOutIkPiv_grp.attr('mrzl').value = 0
+		# 	self.footInIkPiv_grp.attr('xrzl').value = 0
+		self.footOutIkPiv_grp.attr('xrye').value = 1
+		self.footOutIkPiv_grp.attr('xryl').value = 0
+		self.footInIkPiv_grp.attr('mrye').value = 1
+		self.footInIkPiv_grp.attr('mryl').value = 0
 
 		# IK stretch
 		self.upLegIkJntPnt_grp = pc.Null()
@@ -463,6 +505,7 @@ class LegRig( object ) :
 		
 		self.legIkAutoStretch_cnd = pc.Condition()
 		self.legIkAutoStretch_mul = pc.MultDoubleLinear()
+		self.legIkAutoStretchDiv_mdv = pc.MultiplyDivide()
 		
 		self.upLegIkAutoStretch_mul = pc.MultDoubleLinear()
 		self.upLegIkStretch_mul = pc.MultDoubleLinear()
@@ -476,15 +519,19 @@ class LegRig( object ) :
 		
 		# IK Stretch - Auto stretch
 		ikCtrlDist = self.legIkAutoStretch_dist.attr('d').value
-		upLegDist = self.lowLegIk_jnt.attr('ty').value
-		lowLegDist = self.ankleIk_jnt.attr('ty').value
+		upLegDist = abs( self.lowLegIk_jnt.attr('ty').value )
+		lowLegDist = abs( self.ankleIk_jnt.attr('ty').value )
 		
 		self.legIkAutoStretch_dist.attr('d') >> self.legIkAutoStretch_cnd.attr('ft')
-		self.legIkAutoStretch_cnd.attr('st').value = ikCtrlDist
+		self.legIkAutoStretch_cnd.attr('st').value = upLegDist + lowLegDist
 		self.legIkAutoStretch_cnd.attr('op').value = 2
 		self.legIkAutoStretch_cnd.attr('cfr').value = 1
 		self.legIkAutoStretch_dist.attr('d') >> self.legIkAutoStretch_mul.attr('i1')
-		self.legIkAutoStretch_mul.attr('i2').value = 1/ikCtrlDist
+		self.legIkAutoStretchDiv_mdv.attr('op').v = 2
+		self.legIkAutoStretchDiv_mdv.attr('i1x').v = 1
+		self.legIkAutoStretchDiv_mdv.attr('i2x').v = upLegDist + lowLegDist
+		# self.legIkAutoStretch_mul.attr('i2').value = 1/ikCtrlDist
+		self.legIkAutoStretchDiv_mdv.attr('ox') >> self.legIkAutoStretch_mul.attr('i2')
 		self.legIkAutoStretch_mul.attr('o') >> self.legIkAutoStretch_cnd.attr('ctr')
 		
 		self.legIkAutoStretch_cnd.attr('ocr') >> self.upLegIkAutoStretch_mul.attr('i1')
@@ -738,7 +785,7 @@ class LegRig( object ) :
 		# self.lowLegRbnRootTwstGrp_parCons		= pc.parentConstraint( self.forearm_jnt ,
 		# 										self.lowLegRbn.rbnRootTwst_grp
 		# 										)
-
+		
 		self.lowLegRbn.rbnEndTwstZro_grp.snap( ankle )
 		self.lowLegRbnEndTwstZroGrp_parCons	= pc.parentConstraint( self.lowLeg_jnt ,
 												self.lowLegRbn.rbnEndTwstZro_grp ,
@@ -766,7 +813,20 @@ class LegRig( object ) :
 			self.lowLegRbn.rbnJnt_grp.parent( self.legJnt_grp )
 			self.upLegRbn.rbnStill_grp.parent( stillGrp )
 			self.lowLegRbn.rbnStill_grp.parent( stillGrp )
-		
+
+		# # Ribbon - add bend
+		# self.legRbn_ctrl.add( ln='bend' , dv=0 , k=True )
+		# self.upperLegRbnBend_mul = rigTools.attrAmper(
+		# 													self.legRbn_ctrl.attr('bend') ,
+		# 													self.upLegRbn.rbnMidJntOfst_grp.attr('tz') ,
+		# 													dv = 0.1
+		# 												)
+		# self.lowerLegRbnBend_mul = rigTools.attrAmper(
+		# 													self.legRbn_ctrl.attr('bend') ,
+		# 													self.lowLegRbn.rbnMidJntOfst_grp.attr('tz') ,
+		# 													dv = 0.1
+		# 												)
+
 		# Ribbon - cleanup
 		self.legRbn_ctrl.lockHideAttrs( 'rx' , 'ry' , 'rz' , 'sx' , 'sy' , 'sz' , 'v' )
 		self.upLegRbn.rbnRoot_ctrl.lockHideAttrs( 'tx' , 'ty' , 'tz' )

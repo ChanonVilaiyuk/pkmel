@@ -1184,26 +1184,21 @@ def locatorOnMidPos() :
 def renameSelectedSkinSet() :
 	
 	for sel in mc.ls( sl=True ) :
-		
-		try :
-			
-			renameDeformerSet( sel , 'skinCluster' )
-			renameDeformerSet( sel , 'tweak' )
-			
-		except TypeError :
-			
-			print '%s has no related skinCluster node' % sel
+		renameDeformerSet( sel , 'skinCluster' )
+		renameDeformerSet( sel , 'tweak' )
 
 def renameDeformerSet( obj='' , defType='' ) :
 	
-	shape = mc.listRelatives( obj , s=True )[0]
-	# shape = obj
-	dfNode = mc.listConnections( shape , s=True , d=False , type=defType )[0]
-	dfSet = mc.listConnections( dfNode , s=False , d=True , type='objectSet' )[0]
-	
 	suffix = '%s%s' % ( defType[0].upper() , defType[1:] )
-	mc.rename( dfNode , '%s%s' % ( obj , suffix ) )
-	mc.rename( dfSet , '%s%sSet' % ( obj , suffix ) )
+	shape = mc.listRelatives( obj , s=True )[0]
+	
+	dfNodes = mc.listConnections( shape , s=True , d=False , type=defType )
+	
+	if dfNodes :
+		currSkn = mc.rename( dfNodes[0] , '%s%s' % ( obj , suffix ) )
+		dfSets = mc.listConnections( currSkn , s=False , d=True , type='objectSet' )
+		if dfSets :
+			mc.rename( dfSets[0] , '%s%sSet' % ( obj , suffix ) )
 
 def renameClusterHandleShape() :
 	
@@ -1867,6 +1862,33 @@ def removeAllNodeInNamespace( ns='' ) :
 				except :
 					pass
 				mc.lockNode( newName , l=lockState )
+
+def renameAllNodeInNamespace( ns='' ) :
+
+	# Remove every nodes that belong to the given namespace.
+	# Input		: Namespace
+	# Output	: Empty namespace
+	
+	nodes = mc.ls( '%s:*' % ns , l=True )
+	mc.namespace( set=':' )
+
+	if nodes :
+		# If current namespace contains nodes,
+		# delete them.
+		for node in nodes :
+
+			if mc.objExists( node ) :
+
+				lockState = mc.lockNode( node , q=True )[0]
+
+				if lockState :
+					mc.lockNode( node , l=False )
+				newName = addElementToName( node.split( ':' )[-1] , ns )
+				print newName
+				try :
+					mc.rename( node , newName )
+				except :
+					pass
 
 def removeLeafNamespace( parentNs=':' ) :
 
