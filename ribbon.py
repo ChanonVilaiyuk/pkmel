@@ -223,8 +223,8 @@ class RibbonIk( object ) :
 		self.rbnEnd_dist.attr('d') >> self.rbnLength_add.attr('i2')
 
 		rbnCtrlShp.attr('restLength').v = size
+		rbnCtrlShp.attr('restLength').lock = True
 
-		self.rbnAutoSquash_blnd = pc.BlendTwoAttr()
 		self.rbnSquashDiv_mdv = pc.MultiplyDivide()
 		self.rbnSquashPow_mdv = pc.MultiplyDivide()
 		self.rbnSquashNorm_mdv = pc.MultiplyDivide()
@@ -241,11 +241,6 @@ class RibbonIk( object ) :
 		self.rbnSquashDiv_mdv.attr('i1x').v = 1
 		self.rbnSquashPow_mdv.attr('ox') >> self.rbnSquashDiv_mdv.attr('i2x')
 		
-		self.rbn_ctrl.attr('autoSquash') >> self.rbnAutoSquash_blnd.attr('ab')
-		self.rbnAutoSquash_blnd.add( ln='default' , dv=1 , k=True )
-		self.rbnAutoSquash_blnd.attr('default') >> self.rbnAutoSquash_blnd.last()
-		self.rbnSquashDiv_mdv.attr('ox') >> self.rbnAutoSquash_blnd.last()
-
 		# - Cleanup -
 		# rigTools.lockUnusedAttrs( self )
 		
@@ -427,6 +422,12 @@ class RibbonIkHi( RibbonIk ) :
 		dtlTwsts = []
 		dtlZros = []
 		sqshPmas = []
+		autoSquashBlnds = []
+		autoSquashAdds = []
+		autoSquashMuls = []
+		autoSquashAmpPmas = []
+
+		autoSquashMulDict = { 0 : 0.33 , 1 : 0.66 , 2 : 1 , 3 : 0.66 , 4 : 0.33 }
 		
 		dtlJntParconss 	= []
 		dtlCtrlParconss = []
@@ -438,12 +439,20 @@ class RibbonIkHi( RibbonIk ) :
 			dtlTwst = pc.Null()
 			dtlZro = pc.Null()
 			sqshPma = pc.PlusMinusAverage()
+			autoSquashMul = pc.MultDoubleLinear()
+			autoSquashAdd = pc.AddDoubleLinear()
+			autoSquashBlnd = pc.BlendTwoAttr()
+			autoSquashAmpPma = pc.PlusMinusAverage()
 			
 			dtlCtrls.append( dtlCtrl )
 			dtlJnts.append( dtlJnt )
 			dtlTwsts.append( dtlTwst )
 			dtlZros.append( dtlZro )
 			sqshPmas.append( sqshPma )
+			autoSquashMuls.append( autoSquashMul )
+			autoSquashAdds.append( autoSquashAdd )
+			autoSquashBlnds.append( autoSquashBlnd )
+			autoSquashAmpPmas.append( autoSquashAmpPma )
 
 			# Shape adjustment
 			dtlCtrl.rotateShape( self.rotate )
@@ -458,11 +467,32 @@ class RibbonIkHi( RibbonIk ) :
 			dtlJnt.parent( self.rbnSkin_grp )
 
 			# Squash setup
+			currAutoSquashAmp = autoSquashMulDict[ix]
+			currAmpAttr = 'autoSquash%sAmp' % str(1+ix)
+			rbnCtrlShp.add( ln=currAmpAttr , dv=currAutoSquashAmp )
 			dtlCtrl.add( ln = 'squash' , k = True )
-			# sqshPma.add( ln = 'default' , min = 1 , max = 1 , dv = 1 , k = True )
-			# sqshPma.attr('default') >> sqshPma.last1D()
-			self.rbnAutoSquash_blnd.attr('o') >> sqshPma.last1D()
+
+			self.rbn_ctrl.attr('autoSquash') >> autoSquashBlnd.attr('ab')
+			autoSquashBlnd.add( ln = 'default' , min = 1 , max = 1 , dv = 1 , k = True )
+			autoSquashBlnd.attr('default') >> autoSquashBlnd.last()
+
+			autoSquashMul.add( ln = 'amp' , k = True )
+			autoSquashMul.attr('amp').v = currAutoSquashAmp
+			autoSquashMul.attr('amp') >> autoSquashMul.attr('i1')
+			self.rbnSquashDiv_mdv.attr('ox') >> autoSquashMul.attr('i2')
+
+			autoSquashAmpPma.add( ln='default' , k=True )
+			autoSquashAmpPma.attr('operation').v = 2
+			autoSquashAmpPma.attr('default').v = 1
+			autoSquashAmpPma.attr('default') >> autoSquashAmpPma.last1D()
+			rbnCtrlShp.attr(currAmpAttr) >> autoSquashAmpPma.last1D()
+
+			autoSquashAmpPma.attr('output1D') >> autoSquashAdd.attr('i1')
+			autoSquashMul.attr('o') >> autoSquashAdd.attr('i2')
+			autoSquashAdd.attr('o') >> autoSquashBlnd.last()
+
 			dtlCtrl.attr('squash') >> sqshPma.last1D()
+			autoSquashBlnd.attr('o') >> sqshPma.last1D()
 			sqshPma.attr('output1D') >> dtlJnt.attr( self.sqshAx[0] )
 			sqshPma.attr('output1D') >> dtlJnt.attr( self.sqshAx[1] )
 			dtlCtrl.lockHideAttrs( 'sx' , 'sy' , 'sz' , 'v' )
@@ -507,12 +537,34 @@ class RibbonIkHi( RibbonIk ) :
 		self.rbnDtl4Ctrl_parCons ,
 		self.rbnDtl5Ctrl_parCons
 		) = dtlCtrlParconss
-		( self.rbnDtl1Jnt_parCons ,
-		self.rbnDtl2Jnt_parCons ,
-		self.rbnDtl3Jnt_parCons ,
-		self.rbnDtl4Jnt_parCons ,
-		self.rbnDtl5Jnt_parCons
-		) = dtlJntParconss
+
+		( self.rbnDtl1AutoSquash_blnd ,
+		self.rbnDtl2AutoSquash_blnd ,
+		self.rbnDtl3AutoSquash_blnd ,
+		self.rbnDtl4AutoSquash_blnd ,
+		self.rbnDtl5AutoSquash_blnd
+		) = autoSquashBlnds
+
+		( self.rbnDtl1AutoSquash_mul ,
+		self.rbnDtl2AutoSquash_mul ,
+		self.rbnDtl3AutoSquash_mul ,
+		self.rbnDtl4AutoSquash_mul ,
+		self.rbnDtl5AutoSquash_mul
+		) = autoSquashMuls
+
+		( self.rbnDtl1AutoSquash_add ,
+		self.rbnDtl2AutoSquash_add ,
+		self.rbnDtl3AutoSquash_add ,
+		self.rbnDtl4AutoSquash_add ,
+		self.rbnDtl5AutoSquash_add
+		) = autoSquashAdds
+
+		( self.rbnDtl1AutoSquashAmp_pma ,
+		self.rbnDtl2AutoSquashAmp_pma ,
+		self.rbnDtl3AutoSquashAmp_pma ,
+		self.rbnDtl4AutoSquashAmp_pma ,
+		self.rbnDtl5AutoSquashAmp_pma
+		) = autoSquashAmpPmas
 		# - End Detail controller and skin joint -
 
 		# - Twist distribution -
@@ -608,16 +660,20 @@ class RibbonIkLow( RibbonIk ) :
 		self.rbn_ctrl.add( ln = 'squash' , at = 'float' , k = True )
 
 		# - Squash setup - Squash attribute amplitude
+		self.rbnAutoSquash_blnd = pc.BlendTwoAttr()
 		self.rbnSquashAmp_mul = pc.MultDoubleLinear()
 		self.rbnSquashAmp_mul.attr('i2').v = 0.1
 		self.rbn_ctrl.attr('squash') >> self.rbnSquashAmp_mul.attr('i1')
 
 		self.rbnSquash_add = pc.AddDoubleLinear()
-		# self.rbnSquash_add.add( ln='default' , min=1 , max=1 , dv=1 , k=True )
 
-		# self.rbnSquash_add.attr( 'default' ) >> self.rbnSquash_add.attr( 'i1' )
-		self.rbnAutoSquash_blnd.attr( 'o' ) >> self.rbnSquash_add.attr( 'i1' )
-		self.rbnSquashAmp_mul.attr( 'o' ) >> self.rbnSquash_add.attr( 'i2' )
+		self.rbnAutoSquash_blnd.add( ln='default' , dv=1 , min=1 , max=1 , k=True )
+		self.rbn_ctrl.attr('autoSquash') >> self.rbnAutoSquash_blnd.attr('ab')
+		self.rbnAutoSquash_blnd.attr('default') >> self.rbnAutoSquash_blnd.last()
+		self.rbnSquashDiv_mdv.attr('ox') >> self.rbnAutoSquash_blnd.last()
+
+		self.rbnSquashAmp_mul.attr( 'o' ) >> self.rbnSquash_add.attr( 'i1' )
+		self.rbnAutoSquash_blnd.attr( 'o' ) >> self.rbnSquash_add.attr( 'i2' )
 		self.rbnSquash_add.attr( 'o' ) >> self.rbn_jnt.attr( self.sqshAx[0] )
 		self.rbnSquash_add.attr( 'o' ) >> self.rbn_jnt.attr( self.sqshAx[1] )
 
