@@ -39,10 +39,12 @@ class RibbonIk( object ) :
 		# -- Root joint --
 		self.rbnRoot_jnt 	= pc.Joint()
 		self.rbnRoot_ctrl 	= pc.Control( 'plus' )
-		self.rbnRootCtrlZro_grp = pc.group( self.rbnRoot_ctrl  )
+		self.rbnRootCtrlOfst_grp = pc.group( self.rbnRoot_ctrl  )
+		self.rbnRootCtrlZro_grp = pc.group( self.rbnRootCtrlOfst_grp  )
 		self.rbnRootCtrlAim_grp = pc.Null()
 		
-		self.rbnRootJnt_parCons = pc.parentConstraint( self.rbnRootCtrlAim_grp ,
+		self.rbnRootJnt_parCons = pc.parentConstraint(
+														self.rbnRootCtrlAim_grp ,
 														self.rbnRoot_jnt
 														)
 		self.rbnRoot_jnt.parent( self.rbnJnt_grp )
